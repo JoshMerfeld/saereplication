@@ -6,7 +6,12 @@ We will be estimating a geospatial SAE model to estimate food insecurity in Beni
 
 # scripts
 
-In the scripts folder are four scripts plus an additional folder, called "gee". The gee folder includes 9 scripts to pull data from Google Earth Engine. You MUST have the files in order to be able to run the rest of the scripts. The reason for this is that the files produced by Google Earth Engine are quite large (several GB) which makes hosting them here difficult. As an alternative to pulling the data from Google Earth Engine, you can download them all directly from here: https://www.dropbox.com/s/v9ftyr4ziynhgew/downloaddata.zip?dl=0. After pulling the data from Google Earth Engine OR downloading them from the link, please place the files in the "features" folder. 
+In the scripts folder are four scripts plus an additional folder, called "gee". The gee folder includes 9 scripts to pull data from Google Earth Engine. You MUST have the files in order to be able to run the rest of the scripts. The reason for this is that the files produced by Google Earth Engine are quite large (several GB) which makes hosting them here difficult. If you would like to pull the data from Google Earth Engine yourself, you must first do three things:
+1. Create an account on https://earthengine.google.com/
+2. Create a Google Drive account with the SAME id as 1. and create a folder within it called "unsae"
+3. Upload the grid shapefile to Google Earth Engine with the name "grid"
+
+As an alternative to pulling the data from Google Earth Engine, you can download them all directly from here: https://www.dropbox.com/s/v9ftyr4ziynhgew/downloaddata.zip?dl=0. After pulling the data from Google Earth Engine OR downloading them from the link, please place the files in the "features" folder. 
 
 After you have this data, you should run the following scripts, in order:
 
