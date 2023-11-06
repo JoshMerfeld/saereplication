@@ -53,7 +53,7 @@ sf_use_s2(FALSE)
 # Also do to admin2 because of sparsity of roads in many areas
 # NOTE: I have deleted the parts of this shapefile that are not in Benin in order to reduce the size of the shapefile.
 data <- read_sf("data/GRIP4_Region3_vector_shp/GRIP4_region3.shp")
-# right now, shapefile and roads are in lat/lon. However, we want them in METERS.
+# right now, shapefile and roads are in lat/lon. However, we want them in METERS since we are interested in distances.
 # As such, reproject to a different CRS (based on Benin)
 data <- st_transform(data, crs = "EPSG:32631")
 # same to shapefile
@@ -85,6 +85,10 @@ rm(data, shapemeters)
 # download from google 
 # this takes a while because it is 2 GB. If you are on a slow connection, you may want to download it manually
 # OR ignore this feature
+# NOTE: The link sometimes does not work because of google's download limits. If it doesn't work, you can download it manually
+# by going to https://sites.research.google/open-buildings/#download and downloading the two files for Benin.
+# The two files are 103_buildings.csv.gz and 11d_buildings.csv.gz, which are the two that overlap Benin on the map. 
+# Download them and put them in the data/features folder.
 # Because this file is so large, you need a decent amount of RAM to load it. If you don't have much, I'd suggest completely
 # skipping this section.
 # increasing timeout because of how long it takes to download
@@ -98,30 +102,21 @@ download.file(url = paste0(file), "data/features/buildings2.csv.gz")
 
 # load first csv
 data <- read_csv("data/features/buildings1.csv.gz")
-# and second
+# and second, plus rbind to first (i.e. add as additional rows)
 data <- rbind(data, read_csv("data/features/buildings2.csv.gz"))
-
-# easy way to drop things that fall outside of Benin
-data <- data %>%
-          filter(
-                  longitude>=extent(shape)[1],
-                  longitude<=extent(shape)[2],
-                  latitude>=extent(shape)[3],
-                  latitude<=extent(shape)[4]
-                  ) %>%
-          dplyr::select(latitude, longitude, area_in_meters, confidence)
 
 # now turn data into sf object using coordinates
 data <- st_as_sf(data, coords = c("longitude", "latitude"), 
                    crs = crs(shape))
-# grid's crs is in METERS, not lat/lon. Create lat/lon to match crs of the data points
-shapegridlatlon <- st_transform(shapegrid, crs = st_crs(shape))
+# reproject to match grid (meters)
+data <- st_transform(data, crs = crs(shapegrid))
 
-# crop even more
-data <- st_crop(data, shapegridlatlon)
+# crop to just the buildings that are within the grid
+# (cropping will remove buildings that are outside of shapegrid)
+data <- st_crop(data, shapegrid)
 
-# extract shapefile variables to buildings
-data <- st_join(data, shapegridlatlon, join = st_intersects)
+# join shapefile variables to buildings
+data <- st_join(data, shapegrid, join = st_intersects)
 
 # now we want to calculate the total area of buildings in each admin2 and the number of buildings
 data <- as_tibble(data) %>%
@@ -142,7 +137,7 @@ data <- as_tibble(data) %>%
 data <- data %>% filter(is.na(id)==F)
 write_csv(data, "data/features/buildings_clean.csv")
 
-# now delete the csvs (they are large and we do'nt need them anymore)
+# now delete the csvs (they are large and we don't need them anymore; this way I can upload data to GitHub)
 unlink("data/features/buildings1.csv.gz")
 unlink("data/features/buildings2.csv.gz")
 
@@ -336,6 +331,7 @@ data <- data %>%
 # get 2018 (year of survey) data
 data2018 <- data %>% 
             filter(year(date)==2018) %>%
+            # grid values
             group_by(id) %>%
             mutate(precip_2018 = sum(pr, na.rm=T),
                     precip_2018_sd = sd(pr, na.rm=T)) %>%
@@ -343,6 +339,7 @@ data2018 <- data %>%
             ungroup() %>%
             dplyr::select(id, admin2Pcod, precip_2018, precip_2018_sd)
 data2018_adm2 <- data2018 %>% 
+                  # admin2 values
                   group_by(admin2Pcod) %>%
                   mutate(precip_2018_adm2 = mean(precip_2018, na.rm=T), 
                          precip_2018_sd_adm2 = sd(precip_2018, na.rm=T)) %>%
@@ -357,7 +354,9 @@ dataadm2 <- data %>%
             mutate(precip_year_adm2 = sum(pr, na.rm=T)) %>%
             filter(row_number()==1) %>%
             group_by(admin2Pcod) %>%
-            mutate(precip_year_adm2 = mean(precip_year_adm2, na.rm = T)) %>%
+            # this will now give us SD and MEAN precip over the years prior to 2018
+            mutate(precip_year_sd_adm2 = sd(precip_year_adm2, na.rm = T),
+                    precip_year_adm2 = mean(precip_year_adm2, na.rm = T)) %>%
             filter(row_number()==1) %>%
             dplyr::select(admin2Pcod, precip_year_adm2)
 # and now for id
@@ -367,7 +366,9 @@ data <- data %>%
             mutate(precip_year = sum(pr, na.rm=T)) %>%
             filter(row_number()==1) %>%
             group_by(id) %>%
-            mutate(precip_year = mean(precip_year, na.rm = T)) %>%
+            # this will now give us SD and MEAN precip over the years prior to 2018
+            mutate(precip_year_sd = sd(precip_year, na.rm = T),
+                    precip_year = mean(precip_year, na.rm = T)) %>%
             filter(row_number()==1) %>%
             dplyr::select(id, precip_year)
 
@@ -375,7 +376,9 @@ data <- data %>%
 data <- data %>% left_join(data2018, by = "id")
 data <- data %>% left_join(data2018_adm2, by = "admin2Pcod")
 data <- data %>% left_join(dataadm2, by = "admin2Pcod")
-# a few NAs in SD, lets' replace with admin2 values
+
+# There are some missings, which happens sometimes with geospatial data.
+summary(data) # only one for SD
 data$precip_2018_sd[is.na(data$precip_2018_sd)] <- data$precip_2018_sd_adm2[is.na(data$precip_2018_sd)]
 # now save
 write_csv(data, "data/features/precip_clean.csv")

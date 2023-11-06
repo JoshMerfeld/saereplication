@@ -13,7 +13,7 @@ In the scripts folder are four scripts plus an additional folder, called "gee". 
 
 As an alternative to pulling the data from Google Earth Engine, you can download them all directly from here: https://www.dropbox.com/s/v9ftyr4ziynhgew/downloaddata.zip?dl=0. After pulling the data from Google Earth Engine OR downloading them from the link, please place the files in the "features" folder. 
 
-Make sure you have this entire repository downloaded and, importantly **set the working direction in R to the location of the saereplication folder**. Then, run the following scripts, in order:
+Make sure you have this entire repository downloaded and, importantly, **set the working directory in R to the location of the saereplication folder**. Then, run the following scripts, in order:
 
 ## 1.geospatialmatching
 
@@ -43,7 +43,7 @@ This script estimates a geospatial SAE model using the povmap package and EBP. I
 
 ## data
 
-The data folder contains all of the data you need to run the scripts. Please take note of the warning above regarding the Google Earth Engine data.
+The data folder contains all of the data you need to run the scripts. Please take note of the warning above regarding the Google Earth Engine data. If you only want to do 4.estimation, then you can just use the repository as is.
 
 ## shapefile
 

@@ -3,7 +3,7 @@
 
 library(tidyverse)  # general tools for data cleaning
 library(sf)         # for shapefiles
-library(raster)     # for rasters
+library(terra)     # for rasters
 
 # shapefile, admin2, benin
 shape <- read_sf("shapefile/ben_admbnda_adm2_1m_salb_20190816.shp")
